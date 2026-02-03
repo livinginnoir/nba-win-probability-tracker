@@ -1,2 +1,11 @@
 nba_env/
 *.csv
+# Jupyter Notebooks
+.ipynb_checkpoints/
+.virtual_documents/
+
+# Anaconda
+anaconda_projects/
+
+# macOS
+.DS_Store
