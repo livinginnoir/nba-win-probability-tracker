@@ -9,3 +9,6 @@ anaconda_projects/
 
 # macOS
 .DS_Store
+
+# Credentials
+.env
