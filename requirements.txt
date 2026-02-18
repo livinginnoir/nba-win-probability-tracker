@@ -1,0 +1,18 @@
+# Data Processing & Math
+pandas
+numpy<2.4
+pyarrow
+scipy
+
+# Machine Learning
+xgboost
+optuna
+scikit-learn
+joblib
+
+# Interpretation & Visualization
+shap
+matplotlib
+
+# Application Framework
+streamlit
