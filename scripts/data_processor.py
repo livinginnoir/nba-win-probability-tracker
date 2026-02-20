@@ -32,7 +32,7 @@ def check_garbage_time(row):
 def nba_engine_processor(df):
     """Primary cleaning and basic feature engineering pipeline."""
     # 1. CLEANING & FORMATTING
-    dropped_columns = ['teamTricode', 'personId', 'playerName', 'playerNameI', 
+    dropped_columns = ['personId', 'playerName', 'playerNameI', 
                        'xLegacy', 'yLegacy', 'shotDistance', 'isFieldGoal', 
                        'pointsTotal', 'subType', 'videoAvailable', 'shotValue', 'actionNumber']
     
@@ -134,26 +134,38 @@ def run_main_pipeline():
     df_23 = pd.read_csv('../data/nbastatsv3_2023.csv')
     df_24 = pd.read_csv('../data/nbastatsv3_2024.csv')
 
-    # 2. Process Seasons
+    # 2. Process Seasons (Now contains tricode, actionType, and location)
     p_23 = calculate_strengths(nba_engine_processor(df_23))
     p_24 = calculate_strengths(nba_engine_processor(df_24))
 
-    # 3. Concatenate and Clean for XGBoost
-    df_model = pd.concat([p_23, p_24], ignore_index=True)
-    cols_to_drop = ['clock', 'description', 'location', 'actionType', 'shotResult', 
-                    'teamId', 'actionId', 'seconds_remaining']
-    df_model = df_model.drop(columns=[c for c in cols_to_drop if c in df_model.columns])
+    # 3. Combine into a "Master Metadata" DataFrame
+    df_metadata = pd.concat([p_23, p_24], ignore_index=True)
+    
+    # --- SAVE POINT 1: METADATA ---
+    # This file keeps teamTricode, location, and description for the App UI
+    df_metadata.to_parquet('../data/nba_metadata_2500.parquet')
+    print("Success: Metadata Parquet saved for App UI.")
 
-    # 4. Final Optimization and Save
+    # 4. Prepare for XGBoost (Drop strings and IDs)
+    cols_to_drop = ['clock', 'description', 'location', 'actionType', 'shotResult', 
+                    'teamId', 'actionId', 'seconds_remaining', 'teamTricode']
+    
+    df_model = df_metadata.drop(columns=[c for c in cols_to_drop if c in df_metadata.columns])
+
+    # 5. Final Optimization and Save
     optimized_dtypes = {
         'is_home': 'int8', 'lead_changed': 'int8', 'total_lead_changes': 'int16',
         'is_clutch': 'int8', 'HOME_WINS': 'int8', 'home_games_played': 'int16',
         'away_games_played': 'int16', 'avg_margin_diff': 'float32', 'gameId': 'object'
     }
-    df_model = df_model.astype(optimized_dtypes)
     
+    # Filter optimized_dtypes to only include columns actually present in df_model
+    final_dtypes = {k: v for k, v in optimized_dtypes.items() if k in df_model.columns}
+    df_model = df_model.astype(final_dtypes)
+    
+    # --- SAVE POINT 2: MODEL READY ---
     df_model.to_parquet('../data/nba_wp_model_ready_2500.parquet')
-    print("Done! Model-ready Parquet saved to ../data/")
+    print("Success: Model-ready Parquet saved for XGBoost.")
 
 if __name__ == "__main__":
     run_main_pipeline()
