@@ -1,19 +1,22 @@
-# Data Processing & Math
+# Data Manipulation & Storage
 pandas
 numpy<2.4
 pyarrow
 scipy
 
-# Machine Learning
+# Machine Learning & Optimization
 xgboost
 optuna
 scikit-learn
 joblib
-
-# Interpretation & Visualization
 shap
+
+# Visualization
 plotly
 matplotlib
+# Altair is often a sub-dependency of Streamlit, 
+# but pinning it to a stable v5 can help compatibility
+altair<6.0.0 
 
-# Application Framework
-streamlit
+# Web Interface (UPGRADED VERSION)
+streamlit>=1.40.0
