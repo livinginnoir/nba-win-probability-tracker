@@ -1,5 +1,4 @@
 nba_env/
-*.parquet
 *.csv
 
 # Python bytecode
