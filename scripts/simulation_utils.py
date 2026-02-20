@@ -1,49 +1,88 @@
 import pandas as pd
 
 class NBASimulator:
-    def __init__(self, data_path):
-        """Load the processed dataset."""
-        self.df = pd.read_parquet(data_path)
+    def __init__(self, model_data_path, metadata_path):
+        """Loads two versions: one for the math, one for the labels."""
+        self.model_df = pd.read_parquet(model_data_path)
+        self.meta_df = pd.read_parquet(metadata_path)
 
-    def get_available_games(self):
-        """Returns unique Game IDs for the Streamlit selection menu."""
-        return self.df['gameId'].unique().tolist()
+    def get_available_games_with_names(self):
+        """Dynamically identifies Home and Away teams and formats the dropdown label."""
+        # Use meta_df because it contains 'location' and 'teamTricode'
+        subset = self.meta_df[['gameId', 'location', 'teamTricode']].drop_duplicates()
+        
+        # Group to find which tricode belongs to 'h' (Home) and 'v' (Visitor)
+        game_teams = subset.groupby(['gameId', 'location'])['teamTricode'].first().unstack()
+        
+        game_list = []
+        for game_id, row in game_teams.iterrows():
+            home = row.get('h', 'Home')
+            away = row.get('v', 'Away')
+            
+            # --- UPDATED LABEL FORMAT ---
+            # This adds the gameId prefix you requested
+            display_label = f"{game_id}: {home} vs {away}"
+            
+            game_list.append({
+                'id': game_id,
+                'label': display_label
+            })
+        return game_list
 
     def get_full_game_data(self, game_id):
-        """Returns the entire play-by-play for a game, sorted chronologically."""
-        return self.df[self.df['gameId'] == game_id].sort_values(
+        """Returns the model-ready data for the Inference Engine."""
+        # Pulls from model_df to ensure high-performance math
+        return self.model_df[self.model_df['gameId'] == game_id].sort_values(
             'total_seconds_remaining', ascending=False
         )
 
     def get_game_state_at_time(self, game_df, seconds_remaining):
-        """
-        SLICING LOGIC: 
-        Finds the exact 'frame' of the game at a specific timestamp.
-        Used to update the 'Live Score' and 'Current Probability' in the app.
-        """
-        # Find the row closest to the requested time without going past it
+        """Finds the 'frame' of the game at a specific timestamp."""
         state = game_df[game_df['total_seconds_remaining'] >= seconds_remaining].iloc[-1]
         return state.to_dict()
 
     def get_pivotal_plays(self, game_df, top_n=3):
-        """Identifies the biggest momentum shifts (Win Probability Added)."""
+        """
+        Identifies momentum shifts and merges with metadata for human-readable labels.
+        """
         if 'win_prob' not in game_df.columns:
             return None
         
-        # Calculate the absolute change in probability from the previous play
         game_df = game_df.copy()
-        game_df['prob_delta'] = game_df['win_prob'].diff().abs()
+        # Calculate Win Probability Added (WPA)
+        game_df['WPA'] = game_df['win_prob'].diff().fillna(0)
         
-        return game_df.nlargest(top_n, 'prob_delta')
+        # Get indices of the top absolute swings
+        pivotal_indices = game_df['WPA'].abs().sort_values(ascending=False).index[:top_n]
+        
+        # 1. Start with the math data from game_df
+        pivotal_math = game_df.loc[pivotal_indices]
+        
+        # 2. Join with the human-readable metadata using the shared index
+        # We only need the 'description' from the meta_df
+        pivotal_final = pivotal_math.join(
+            self.meta_df[['description']], 
+            how='left'
+        )
+        
+        return pivotal_final
 
-# --- Testing the Slicer ---
+# --- Updated Testing for the Dual-Load Slicer ---
 if __name__ == "__main__":
-    SIM_DATA = '../data/nba_wp_model_ready_2500.parquet'
-    sim = NBASimulator(SIM_DATA)
+    MODEL_DATA = '../data/nba_wp_model_ready_2500.parquet'
+    META_DATA = '../data/nba_metadata_2500.parquet'
     
-    # Grab a game and slice it at exactly 5 minutes (300 seconds) left
-    game_id = sim.get_available_games()[0]
+    sim = NBASimulator(MODEL_DATA, META_DATA)
+    
+    # Test dropdown labels
+    games = sim.get_available_games_with_names()
+    print(f"First game label: {games[0]['label']}")
+    
+    # Test pivotal plays with metadata join
+    game_id = games[0]['id']
     full_game = sim.get_full_game_data(game_id)
+    full_game['win_prob'] = 0.5 # Dummy prob for test
     
-    five_min_mark = sim.get_game_state_at_time(full_game, 300)
-    print(f"At 5:00 remaining, the score margin was: {five_min_mark['score_margin']}")
+    pivotal = sim.get_pivotal_plays(full_game)
+    print("Top Pivotal Plays with Action labels:")
+    print(pivotal[['actionType', 'WPA']])
