@@ -12,6 +12,7 @@ joblib
 
 # Interpretation & Visualization
 shap
+plotly
 matplotlib
 
 # Application Framework
