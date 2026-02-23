@@ -8,8 +8,6 @@ from optuna.integration import XGBoostPruningCallback
 def load_and_split(file_path):
     """Loads the parquet and splits based on a specific game count index."""
     df = pd.read_parquet(file_path)
-    
-    # --- UPDATED SPLIT LOGIC ---
     unique_games = df['gameId'].unique()
     
     # 1.5 Seasons for training, Remaining 0.5 for testing
@@ -56,7 +54,7 @@ def main():
     DATA_PATH = '../data/nba_wp_model_ready_2500.parquet'
     MODEL_PATH = '../models/nba_win_probability_model.json'
 
-    # Load and Split using the 1845 index
+    # Load and Split
     X_train, y_train, X_test, y_test = load_and_split(DATA_PATH)
     dtrain = xgb.DMatrix(X_train, label=y_train)
     dtest = xgb.DMatrix(X_test, label=y_test)
