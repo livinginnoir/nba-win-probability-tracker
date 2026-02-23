@@ -1,3 +1,13 @@
+# AI USAGE CITATION 
+# Tool: Gemini 
+# Prompt: Gemini was provided directions on the functionality of certain
+# features, including dropdown labels for games, extraction of specific game
+# states by timestamp, and the ability to identify the top "pivotal" plays
+# based on win probability swings.
+# Usage: In addition to implementing the functions described above, I manually
+# refined the get_pivotal_plays logic to ensure the index-based join accurately
+# mapped the WPA swings to the correct text descriptions.
+
 import pandas as pd
 
 class NBASimulator:
