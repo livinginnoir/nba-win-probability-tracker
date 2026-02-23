@@ -1,19 +1,13 @@
-# CODE CITATION HERE - Multiple iterations, long process, changes documented below
-'''Historical Replay:
-- When selecting game, in the dropdown, don't just show the gameId but also show Home Team vs Away Team (Home team should always be first)
-- Clarify that the win probability curve is for Home Team (all sections need this really)
-- For "Top 3 Pivotal Momentum Shifts", add "Action" column after Margin that contains actionType
-    - Change "Prd" to "Period"
-    - Change "Margin" to "Score Margin"
+# AI USAGE CITATION
+# Tool: Gemini
+# Prompt: Gemini was provided headings and text for each page, as well as the
+# general design direction for the app itself, and it returns most of the code
+# below.
+# Usage: Provided the foundational framework for Streamlit page. Generated the
+# visualization and drafted the interactive UI components for the manual game 
+# simulation tool. I manually adjusted the CSS styling, page copy, and the specific 
+# logic for the 'Pivotal Plays' table rendering.
 
-
-What-If Simulator:
-- Using avg_margin_diff, add dropdown with label "Competitiveness": Minor/Moderate/Major Mismatch (different ranges of avg_margin_diff) for Home and Away Teams and Even = 0 avg_margin_diff
-- Change "Possession" to "Current Possession"
-
-Model vs. Reality:
-- When selecting game, in the dropdown, don't just show the gameId but also show Home Team vs Away Team (Home team should always be first)
-- Explain why "Reality" is a straight line and what it means. Also explain that the Blue Line (The Model) represents the continuous probability of the home team winning, ranging from 0.0 to 1.0 based on current in-game events.'''
 import streamlit as st
 import pandas as pd
 import plotly.express as px
